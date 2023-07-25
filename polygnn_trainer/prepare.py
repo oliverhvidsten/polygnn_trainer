@@ -319,6 +319,7 @@ def _prepare_data(
     if for_train:
         has_graph_feats = hasattr(dataframe, ks._F_GRAPH)
         has_node_feats = hasattr(dataframe, ks._F_NODE)
+        has_physics_feats = hasattr(dataframe, ks._F_PHYSICS)
         # check that graph_feats are formatted correctly
         if has_graph_feats:
             check_series_types(dataframe, ks._F_GRAPH)
@@ -326,6 +327,11 @@ def _prepare_data(
             check_series_keys(dataframe, ks._F_GRAPH, graph_srt_keys, for_train)
         else:
             graph_srt_keys = ["<empty>"]
+        #check that physics_feats are formatted correctly
+        if has_physics_feats:
+            check_series_types(dataframe, ks._F_PHYSICS)
+            physics_srt_keys = get_series_keys(dataframe, ks._F_PHYSICS)
+            check_series_keys(dataframe, ks._F_PHYSICS, physics_srt_keys, for_train)
         # check that node_feats are formatted correctly
         if has_node_feats:
             check_series_types(dataframe, ks._F_NODE)
@@ -340,29 +346,39 @@ def _prepare_data(
         srt_keys_dict = {
             "graph_srt_keys": graph_srt_keys,
             "node_srt_keys": node_srt_keys,
+            "physics_srt_keys": physics_srt_keys,
         }
         save.safe_save(srt_keys_dict, pkl_path, "pickle")
         graph_str = (
             f"The graph features used during training are: {', '.join(graph_srt_keys)}"
         )
+        physics_str = (
+            f"The physics features used during training are: {', '.join(physics_srt_keys)}"
+        )
         node_str = (
             f"The node features used during training are: {', '.join(node_srt_keys)}"
         )
-        feature_string = "\n\n".join([graph_str, node_str])
+        feature_string = "\n\n".join([graph_str, physics_str, node_str])
         txt_path = path_join(md_dir, ks.FEATURE_FILENAME_TXT)
         save.safe_save(feature_string, txt_path, "text")
     else:
         # retrieve the names of features used during training
         srt_keys_dict = load.load_features(root_dir)
         graph_srt_keys = srt_keys_dict["graph_srt_keys"]
+        physics_srt_keys = srt_keys_dict["physics_srt_keys"]
         node_srt_keys = srt_keys_dict["node_srt_keys"]
         helper = lambda x: x != ["<empty>"]
         has_graph_feats = helper(graph_srt_keys)
+        has_physics_feats = helper(physics_srt_keys)
         has_node_feats = helper(node_srt_keys)
         # check that graph_feats are formatted correctly
         if has_graph_feats:
             check_series_types(dataframe, ks._F_GRAPH)
             check_series_keys(dataframe, ks._F_GRAPH, graph_srt_keys, for_train)
+        # check that physics_feats are formatted correctly
+        if has_physics_feats:
+            check_series_types(dataframe, ks._F_PHYSICS)
+            check_series_keys(dataframe, ks._F_PHYSICS, physics_srt_keys, for_train)
         # check that node_feats are formatted correctly
         if has_node_feats:
             check_series_types(dataframe, ks._F_NODE)
@@ -371,6 +387,9 @@ def _prepare_data(
     # sort graph_feats
     if has_graph_feats:
         dataframe = sort_pandas_column(dataframe, ks._F_GRAPH, graph_srt_keys)
+    # sort physics feats
+    if has_physics_feats:
+        dataframe = sort_pandas_column(dataframe, ks._F_PHYSICS, physics_srt_keys)
     # sort node feats
     if has_node_feats:
         dataframe = sort_pandas_column(dataframe, ks._F_NODE, node_srt_keys)
@@ -447,6 +466,20 @@ def _prepare_data(
             fillna=fillna,
         )
 
+        # Prepare the physics-features
+        if physics_srt_keys == ["<empty>"]:
+            fillna = empty_input_tensor()
+        else:
+            fillna = None
+        
+        copy_attribute_safe(
+            via=x,
+            to=data,
+            attr_name_via=f"{ks._F_PHYSICS}_array",
+            attr_name_to=ks._F_PHYSICS,
+            fillna=fillna,
+        )
+
         # Prepare the graph-features.
         if graph_srt_keys == ["<empty>"]:
             fillna = empty_input_tensor()
@@ -508,6 +541,8 @@ def prepare_init(
         raise KeyError(
             f"Key 'value' not present in dataframe. Cannot process training data."
         )
+
+    # Do not check for physics values here because they will not be used for initial neural network input
     if not (
         hasattr(dataframe, ks._F_GRAPH)
         or hasattr(dataframe, ks._F_NODE)

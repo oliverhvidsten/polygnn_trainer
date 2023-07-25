@@ -130,6 +130,8 @@ def _evaluate(model, val_loader, device, is_submodel, selector_dim, **kwargs):
     """
 
     y_val, y_val_hat_mean, y_val_hat_std, selectors = init_evaluation(model)
+    lnA_val = []
+    Ea_val = []
     for ind, data in enumerate(val_loader):  # loop through validation batches
         data = data.to(device)
         # sometimes the batch may have labels associated. Let's check
@@ -146,9 +148,11 @@ def _evaluate(model, val_loader, device, is_submodel, selector_dim, **kwargs):
         # if we are not dealing with a submodel then we have an ensemble.
         # The ensemble will have two outputs: the mean and standard deviation.
         else:
-            mean, std = model(data, **kwargs)
+            mean, std, lnA, Ea = model(data, **kwargs)
             y_val_hat_mean += mean.flatten().detach().cpu().numpy().tolist()
             y_val_hat_std += std.flatten().detach().cpu().numpy().tolist()
+            lnA_val += lnA.flatten().detach().cpu().numpy().tolist()
+            Ea_val += Ea.flatten().detach().cpu().numpy().tolist()
     del data  # free memory
     if is_submodel:
         return np.array(y_val), np.array(y_val_hat_mean), selectors
@@ -157,5 +161,7 @@ def _evaluate(model, val_loader, device, is_submodel, selector_dim, **kwargs):
             np.array(y_val),
             np.array(y_val_hat_mean),
             np.array(y_val_hat_std),
+            np.array(lnA_val),
+            np.array(Ea_val),
             selectors,
         )

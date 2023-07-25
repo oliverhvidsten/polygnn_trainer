@@ -334,6 +334,7 @@ def train_kfold_ensemble(
         prepare.copy_attribute_safe(x.data, data, "selector")
         prepare.copy_attribute_safe(x.data, data, "graph_feats")
         prepare.copy_attribute_safe(x.data, data, "node_feats")
+        prepare.copy_attribute_safe(x.data, data, "physics_feats")
 
         return data
 

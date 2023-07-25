@@ -31,6 +31,7 @@ submodel_re = re.compile(f"model_{integer}.pt")
 _F_SMILES = "x"
 _F_GRAPH = "graph_feats"
 _F_NODE = "node_feats"
+_F_PHYSICS = "physics_feats"
 _F_SELECTORS = "selector"
 _F_SET = [_F_SMILES, _F_GRAPH, _F_NODE, _F_SELECTORS]
 _Y = "y"
