@@ -1,5 +1,4 @@
 from torch import nn, zeros, manual_seed, tensor, log, max
-from torch.nn import ReLU
 import warnings
 
 from . import constants, infer, layers
@@ -332,20 +331,11 @@ class PhysicsInformed(StandardModule):
 
         lnA = data.yhat[:,0]
         Ea = data.yhat[:,1]
+
         # ln sigma = lnA + (-1/RT)* Ea
         data.yhat = (data.yhat[:,0] + (-1/(8.314*physics[:,0]))*data.yhat[:,1])/2.303
 
-        sigma_not = data.yhat[:,0]
-        K = data.yhat[:,1]
-        # log10 sigma = ln(sigma_not + K/M) * (1/2.303)
-        '''
-        relu = ReLU()
-        data.yhat = sigma_not + K/physics[:,0]
-        data.yhat = relu(data.yhat) + 1
-        data.yhat = log(data.yhat)
-        data.yhat = data.yhat/2.303
-        '''
         if is_pred:
-            return data.yhat, lnK, Ea
+            return data.yhat, lnA, Ea
         else:
             return data.yhat
